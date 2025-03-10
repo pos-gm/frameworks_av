@@ -164,6 +164,7 @@ public:
     virtual audio_channel_mask_t mixerChannelMask() const = 0;
     virtual audio_format_t format() const = 0;
     virtual uint32_t channelCount() const = 0;
+    virtual std::string flagsAsString() const = 0;
 
     // Called by AudioFlinger::frameCount(audio_io_handle_t output) and effects,
     // and returns the [normal mix] buffer's frame count.
@@ -403,7 +404,7 @@ public:
     // the Thread is not busy releasing the Tracks, during which the Thread mutex
     // may be temporarily unlocked.  Some Track methods will use this method to
     // avoid races.
-    virtual void waitWhileThreadBusy_l(audio_utils::unique_lock& ul)
+    virtual void waitWhileThreadBusy_l(audio_utils::unique_lock<audio_utils::mutex>& ul)
             REQUIRES(mutex()) = 0;
 
     // The ThreadloopExecutor is used to defer functors or dtors
@@ -482,7 +483,8 @@ public:
             bool isSpatialized,
             bool isBitPerfect,
             audio_output_flags_t* afTrackFlags,
-            float volume)
+            float volume,
+            bool muted)
             REQUIRES(audio_utils::AudioFlinger_Mutex) = 0;
 
     virtual status_t addTrack_l(const sp<IAfTrack>& track) REQUIRES(mutex()) = 0;
@@ -563,8 +565,8 @@ public:
     virtual void setTracksInternalMute(std::map<audio_port_handle_t, bool>* tracksInternalMute)
             EXCLUDES_ThreadBase_Mutex = 0;
 
-    virtual status_t setPortsVolume(const std::vector<audio_port_handle_t>& portIds, float volume)
-            EXCLUDES_ThreadBase_Mutex = 0;
+    virtual status_t setPortsVolume(const std::vector<audio_port_handle_t> &portIds, float volume,
+                                    bool muted) EXCLUDES_ThreadBase_Mutex = 0;
 };
 
 class IAfDirectOutputThread : public virtual IAfPlaybackThread {
@@ -665,7 +667,7 @@ public:
             audio_stream_type_t streamType,
             audio_session_t sessionId,
             const sp<MmapStreamCallback>& callback,
-            audio_port_handle_t deviceId,
+            const DeviceIdVector& deviceIds,
             audio_port_handle_t portId) EXCLUDES_ThreadBase_Mutex = 0;
     virtual void disconnect() EXCLUDES_ThreadBase_Mutex = 0;
 
@@ -705,8 +707,8 @@ public:
 
     virtual AudioStreamOut* clearOutput() EXCLUDES_ThreadBase_Mutex = 0;
 
-    virtual status_t setPortsVolume(const std::vector<audio_port_handle_t>& portIds, float volume)
-            EXCLUDES_ThreadBase_Mutex = 0;
+    virtual status_t setPortsVolume(const std::vector<audio_port_handle_t>& portIds, float volume,
+                                    bool muted) EXCLUDES_ThreadBase_Mutex = 0;
 };
 
 class IAfMmapCaptureThread : public virtual IAfMmapThread {
