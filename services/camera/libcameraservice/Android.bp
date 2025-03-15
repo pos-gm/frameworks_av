@@ -125,13 +125,11 @@ cc_defaults {
 
 cc_library {
     name: "libcameraservice",
+
     defaults: [
         "libcameraservice_deps",
         "libcameraservice_ext_lib_defaults",
-        "uses_oplus_camera_defaults",
-        "uses_nothing_camera_defaults",
     ],
-
     // Camera service source
 
     srcs: [
